@@ -158,7 +158,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.markdown("---")
-    st.caption("Dibuat oleh Tim HRGA - Portofolio 2026")
+    st.caption("Dibuat oleh Adam - Portofolio 2026")
 
 # ==========================================
 # 5. HEADER & IDENTITAS
