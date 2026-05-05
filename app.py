@@ -1,10 +1,14 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
 
 # ======================
 # CONFIG
 # ======================
-st.set_page_config(page_title="Stress Assessment K3", layout="wide")
+st.set_page_config(
+    page_title="Stress Assessment K3",
+    layout="centered"
+)
 
 # ======================
 # STYLE
@@ -12,12 +16,12 @@ st.set_page_config(page_title="Stress Assessment K3", layout="wide")
 st.markdown("""
 <style>
 .block-container {
-    max-width: 900px;
+    max-width: 850px;
 }
 .question-box {
     padding: 12px;
     border-radius: 10px;
-    background-color: #f8fafc;
+    background-color: #f1f5f9;
     margin-bottom: 8px;
 }
 </style>
@@ -26,107 +30,102 @@ st.markdown("""
 # ======================
 # HEADER
 # ======================
-st.title("📋 Kuesioner Faktor Psikologi Kerja")
-st.caption("Mengacu pada Permenaker No. 5 Tahun 2018 tentang K3 Lingkungan Kerja")
+st.title("📋 Kuesioner Stres Kerja")
+st.caption("Berdasarkan Permenaker No. 5 Tahun 2018 (K3 Lingkungan Kerja)")
 
-st.info("Silakan pilih jawaban sesuai kondisi kerja yang Anda alami dalam beberapa waktu terakhir.")
+st.info("Pilih jawaban sesuai kondisi kerja yang Anda alami.")
 
 # ======================
 # SKALA
 # ======================
 st.markdown("""
 **Skala Penilaian:**
-- 1 = Tidak Pernah  
-- 2 = Jarang  
-- 3 = Kadang-kadang  
-- 4 = Sering  
-- 5 = Sangat Sering  
+1 = Tidak Pernah  
+2 = Jarang  
+3 = Kadang-kadang  
+4 = Sering  
+5 = Sangat Sering  
 """)
 
 # ======================
-# DATA (DESKRIPSI + SOAL PANJANG)
+# DATA PERTANYAAN
 # ======================
 kategori_data = {
     "TP": {
         "nama": "Ketidakpastian Peran",
-        "deskripsi": "Kondisi dimana pekerja tidak memiliki kejelasan terkait tugas, tanggung jawab, dan harapan pekerjaan yang harus dilakukan.",
+        "deskripsi": "Ketidakjelasan mengenai tugas, tanggung jawab, dan ekspektasi pekerjaan.",
         "soal": [
-            "Saya merasa tidak mendapatkan penjelasan yang jelas mengenai apa saja tugas dan tanggung jawab utama dalam pekerjaan saya.",
-            "Saya sering mengalami kebingungan dalam menentukan prioritas pekerjaan yang harus diselesaikan terlebih dahulu.",
-            "Saya tidak memahami secara jelas apa yang diharapkan oleh atasan terhadap hasil kerja saya.",
-            "Instruksi kerja yang saya terima seringkali tidak lengkap atau kurang jelas.",
-            "Peran dan fungsi saya dalam organisasi tidak dijelaskan secara rinci."
+            "Saya tidak mendapatkan penjelasan yang jelas mengenai tugas pekerjaan saya.",
+            "Saya bingung menentukan prioritas pekerjaan.",
+            "Saya tidak memahami ekspektasi atasan.",
+            "Instruksi kerja sering tidak jelas.",
+            "Peran saya dalam pekerjaan tidak terdefinisi."
         ]
     },
     "KP": {
         "nama": "Konflik Peran",
-        "deskripsi": "Kondisi dimana pekerja menerima tuntutan pekerjaan yang saling bertentangan atau tidak sejalan.",
+        "deskripsi": "Adanya tuntutan pekerjaan yang saling bertentangan.",
         "soal": [
-            "Saya menerima perintah kerja yang saling bertentangan dari atasan yang berbeda.",
-            "Saya diminta melakukan pekerjaan yang tidak sesuai dengan tugas pokok saya.",
-            "Saya mengalami konflik antara tuntutan dari dua pihak atau lebih dalam pekerjaan.",
-            "Saya merasa tuntutan pekerjaan yang diberikan tidak selaras satu sama lain.",
-            "Saya harus memenuhi ekspektasi yang berbeda dari beberapa pihak sekaligus."
+            "Saya menerima perintah yang bertentangan.",
+            "Saya diminta melakukan pekerjaan di luar tugas saya.",
+            "Saya mengalami konflik antar atasan.",
+            "Tuntutan pekerjaan saling bertabrakan.",
+            "Ekspektasi dari berbagai pihak berbeda."
         ]
     },
     "BBKuan": {
         "nama": "Beban Kerja Kuantitatif",
-        "deskripsi": "Kondisi dimana jumlah pekerjaan yang harus diselesaikan melebihi kemampuan atau waktu yang tersedia.",
+        "deskripsi": "Jumlah pekerjaan melebihi waktu atau kemampuan.",
         "soal": [
-            "Jumlah pekerjaan yang harus saya selesaikan terlalu banyak dalam waktu yang terbatas.",
-            "Saya harus bekerja dengan kecepatan tinggi untuk menyelesaikan tugas.",
-            "Saya sering merasa waktu kerja tidak cukup untuk menyelesaikan pekerjaan.",
-            "Saya dihadapkan pada tenggat waktu yang sangat ketat.",
-            "Saya sering harus bekerja lembur untuk menyelesaikan pekerjaan."
+            "Pekerjaan saya terlalu banyak.",
+            "Saya harus bekerja sangat cepat.",
+            "Waktu kerja tidak cukup.",
+            "Deadline sangat ketat.",
+            "Saya sering lembur."
         ]
     },
     "BBKual": {
         "nama": "Beban Kerja Kualitatif",
-        "deskripsi": "Kondisi dimana tingkat kesulitan pekerjaan melebihi kemampuan atau kompetensi pekerja.",
+        "deskripsi": "Tingkat kesulitan pekerjaan tinggi.",
         "soal": [
-            "Pekerjaan yang saya lakukan memiliki tingkat kesulitan yang tinggi.",
-            "Saya merasa membutuhkan keterampilan tambahan untuk menyelesaikan pekerjaan.",
-            "Saya sering merasa tidak mampu menyelesaikan tugas dengan baik.",
-            "Pekerjaan saya menuntut konsentrasi yang sangat tinggi dalam waktu lama.",
-            "Saya merasakan tekanan mental yang tinggi saat bekerja."
+            "Pekerjaan saya sulit.",
+            "Saya butuh skill tambahan.",
+            "Saya merasa tidak mampu menyelesaikan tugas.",
+            "Pekerjaan butuh konsentrasi tinggi.",
+            "Saya merasa tekanan mental tinggi."
         ]
     },
     "PK": {
         "nama": "Pengembangan Karir",
-        "deskripsi": "Kondisi terkait peluang pengembangan diri, pelatihan, dan kemajuan karir dalam pekerjaan.",
+        "deskripsi": "Peluang pengembangan dan karir.",
         "soal": [
-            "Saya tidak melihat adanya peluang pengembangan karir di tempat kerja.",
-            "Sistem promosi jabatan di perusahaan tidak jelas.",
-            "Saya merasa karir saya tidak berkembang.",
-            "Perusahaan kurang memberikan dukungan untuk pengembangan kompetensi.",
-            "Saya jarang mendapatkan pelatihan yang relevan dengan pekerjaan."
+            "Tidak ada peluang karir.",
+            "Promosi tidak jelas.",
+            "Karir stagnan.",
+            "Kurang dukungan pengembangan.",
+            "Jarang pelatihan."
         ]
     },
     "TJO": {
         "nama": "Tanggung Jawab Orang Lain",
-        "deskripsi": "Kondisi dimana pekerja memiliki tanggung jawab terhadap pekerjaan atau keselamatan orang lain.",
+        "deskripsi": "Tanggung jawab terhadap pekerjaan orang lain.",
         "soal": [
-            "Saya bertanggung jawab atas hasil kerja orang lain.",
-            "Kesalahan yang dilakukan orang lain berdampak pada pekerjaan saya.",
-            "Saya harus mengawasi banyak orang dalam pekerjaan.",
-            "Saya merasa terbebani oleh tanggung jawab terhadap tim.",
-            "Saya harus memastikan pekerjaan orang lain berjalan dengan benar."
+            "Saya bertanggung jawab atas orang lain.",
+            "Kesalahan orang lain berdampak ke saya.",
+            "Saya mengawasi banyak orang.",
+            "Saya terbebani oleh tim.",
+            "Saya harus memastikan pekerjaan orang lain."
         ]
     }
 }
 
 # ======================
-# INPUT IDENTITAS
+# IDENTITAS
 # ======================
 st.markdown("### 👤 Data Karyawan")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    nama = st.text_input("Nama")
-
-with col2:
-    dept = st.selectbox("Departemen", ["HR", "Finance", "IT", "Produksi"])
+nama = st.text_input("Nama")
+dept = st.selectbox("Departemen", ["HR", "Finance", "IT", "Produksi"])
 
 st.markdown("---")
 
@@ -173,6 +172,7 @@ if st.button("🔍 Proses & Download"):
 
     for kode, item in kategori_data.items():
         skor = sum([jawaban[f"{kode}_{i}"] for i in range(5)])
+
         hasil.append({
             "Nama": nama,
             "Departemen": dept,
@@ -183,19 +183,40 @@ if st.button("🔍 Proses & Download"):
 
     df = pd.DataFrame(hasil)
 
-    st.subheader("📊 Hasil")
+    # ======================
+    # OUTPUT
+    # ======================
+    st.subheader("📊 Hasil Analisis")
     st.dataframe(df, use_container_width=True)
 
     st.bar_chart(df.set_index("Faktor")["Skor"])
 
     # ======================
-    # DOWNLOAD EXCEL
+    # PRIORITAS
     # ======================
-    file_name = f"hasil_stres_{nama}.xlsx"
+    st.subheader("⚠️ Prioritas")
+
+    high = df[df["Kategori"] == "Tinggi"]
+
+    if not high.empty:
+        for _, row in high.iterrows():
+            st.error(f"{row['Faktor']} → Risiko Tinggi")
+    else:
+        st.success("Tidak ada risiko tinggi")
+
+    # ======================
+    # DOWNLOAD EXCEL (FIX)
+    # ======================
+    output = BytesIO()
+
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Hasil')
+
+    excel_data = output.getvalue()
 
     st.download_button(
         label="📥 Download Excel",
-        data=df.to_excel(index=False, engine="openpyxl"),
-        file_name=file_name,
+        data=excel_data,
+        file_name=f"hasil_stres_{nama}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
