@@ -4,21 +4,25 @@ import pandas as pd
 # ======================
 # CONFIG
 # ======================
-st.set_page_config(page_title="Stress Risk Assessment", layout="wide")
+st.set_page_config(page_title="Stress Assessment", layout="wide")
 
 # ======================
-# STYLE ENTERPRISE
+# STYLE (ENTERPRISE + CLEAN)
 # ======================
 st.markdown("""
 <style>
 .block-container {
-    padding-top: 2rem;
+    padding-top: 1.5rem;
+    max-width: 900px;
 }
-h1, h2, h3 {
-    font-weight: 600;
+h1 {
+    font-weight: 700;
 }
-.stDataFrame {
+.question-box {
+    padding: 12px;
     border-radius: 10px;
+    background-color: #f8fafc;
+    margin-bottom: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -26,8 +30,22 @@ h1, h2, h3 {
 # ======================
 # HEADER
 # ======================
-st.title("📊 Stress Risk Assessment Dashboard")
-st.caption("Permenaker No. 5 Tahun 2018 - K3 Psikologi Kerja")
+st.title("📋 Kuesioner Stres Kerja")
+st.caption("Permenaker No. 5 Tahun 2018")
+
+st.info("Pilih angka yang paling sesuai dengan kondisi Anda")
+
+# ======================
+# SKALA (BIAR JELAS)
+# ======================
+st.markdown("""
+**Skala Penilaian:**
+- 1 = Tidak Pernah  
+- 2 = Jarang  
+- 3 = Kadang-kadang  
+- 4 = Sering  
+- 5 = Sangat Sering  
+""")
 
 # ======================
 # DATA 30 ITEM
@@ -45,7 +63,7 @@ kategori_data = {
         "Tugas di luar tanggung jawab",
         "Konflik antar atasan",
         "Tuntutan bertabrakan",
-        "Ekspektasi berbeda-beda"
+        "Ekspektasi berbeda"
     ]),
     "BBKuan": ("Beban Kuantitatif", [
         "Volume kerja terlalu banyak",
@@ -73,57 +91,44 @@ kategori_data = {
         "Kesalahan orang lain berdampak",
         "Mengawasi banyak orang",
         "Beban tim tinggi",
-        "Harus memastikan pekerjaan orang lain"
+        "Memastikan pekerjaan orang lain"
     ])
 }
 
 # ======================
-# BUILD GRID DATA
-# ======================
-rows = []
-mapping = []
-
-for kode, (nama, soal_list) in kategori_data.items():
-    for soal in soal_list:
-        rows.append({
-            "Faktor": nama,
-            "Pertanyaan": soal,
-            "Skor": 3
-        })
-        mapping.append(kode)
-
-df_input = pd.DataFrame(rows)
-
-# ======================
 # INPUT IDENTITAS
 # ======================
+st.markdown("### 👤 Data Karyawan")
+
 col1, col2 = st.columns(2)
 
 with col1:
-    nama_user = st.text_input("Nama Karyawan")
+    nama = st.text_input("Nama")
 
 with col2:
-    departemen = st.selectbox("Departemen", ["HR", "Finance", "IT", "Produksi"])
+    dept = st.selectbox("Departemen", ["HR", "Finance", "IT", "Produksi"])
+
+st.markdown("---")
 
 # ======================
-# GRID INPUT
+# INPUT PERTANYAAN
 # ======================
-st.subheader("📝 Kuesioner (Pilih Skala 1–5)")
+jawaban = {}
 
-edited_df = st.data_editor(
-    df_input,
-    column_config={
-        "Skor": st.column_config.SelectboxColumn(
-            "Skala",
+for kode, (nama_kat, soal_list) in kategori_data.items():
+    st.markdown(f"### 📌 {nama_kat}")
+
+    for i, soal in enumerate(soal_list):
+        key = f"{kode}_{i}"
+
+        st.markdown(f"<div class='question-box'>{soal}</div>", unsafe_allow_html=True)
+
+        jawaban[key] = st.radio(
+            "",
             options=[1,2,3,4,5],
-            required=True
+            horizontal=True,
+            key=key
         )
-    },
-    hide_index=True,
-    use_container_width=True
-)
-
-st.caption("1 = Tidak Pernah | 5 = Sangat Sering")
 
 # ======================
 # FUNCTION
@@ -139,62 +144,35 @@ def klasifikasi(skor):
 # ======================
 # PROSES
 # ======================
-if st.button("🔍 Analisa"):
+st.markdown("---")
 
-    edited_df["Kode"] = mapping
+if st.button("🔍 Lihat Hasil"):
 
-    hasil = edited_df.groupby("Kode")["Skor"].sum().reset_index()
+    hasil = {}
 
-    nama_map = {k:v[0] for k,v in kategori_data.items()}
-    hasil["Faktor"] = hasil["Kode"].map(nama_map)
-    hasil["Kategori"] = hasil["Skor"].apply(klasifikasi)
+    for kode, (nama_kat, _) in kategori_data.items():
+        skor = sum([jawaban[f"{kode}_{i}"] for i in range(5)])
+        hasil[kode] = {
+            "Faktor": nama_kat,
+            "Skor": skor,
+            "Kategori": klasifikasi(skor)
+        }
 
-    # ======================
-    # OUTPUT
-    # ======================
-    st.subheader("📊 Hasil Analisis")
+    df = pd.DataFrame(hasil).T
 
-    st.dataframe(
-        hasil[["Faktor","Skor","Kategori"]],
-        use_container_width=True
-    )
+    st.subheader("📊 Hasil")
 
-    # ======================
-    # METRIC
-    # ======================
-    col1, col2, col3 = st.columns(3)
+    st.dataframe(df, use_container_width=True)
 
-    with col1:
-        st.metric("Total Faktor", len(hasil))
+    st.bar_chart(df.set_index("Faktor")["Skor"])
 
-    with col2:
-        st.metric("Risiko Tinggi", (hasil["Kategori"]=="Tinggi").sum())
-
-    with col3:
-        st.metric("Rata-rata Skor", round(hasil["Skor"].mean(),1))
-
-    # ======================
-    # CHART
-    # ======================
-    st.subheader("📈 Visualisasi")
-    st.bar_chart(hasil.set_index("Faktor")["Skor"])
-
-    # ======================
     # PRIORITAS
-    # ======================
     st.subheader("⚠️ Prioritas")
 
-    high = hasil[hasil["Kategori"]=="Tinggi"]
+    high = df[df["Kategori"]=="Tinggi"]
 
     if not high.empty:
-        for _, row in high.iterrows():
-            st.error(f"{row['Faktor']} → Risiko Tinggi")
+        for i in high.index:
+            st.error(f"{df.loc[i,'Faktor']} → Risiko Tinggi")
     else:
         st.success("Tidak ada risiko tinggi")
-
-# ======================
-# SIDEBAR
-# ======================
-st.sidebar.title("ℹ️ Informasi")
-st.sidebar.write("Assessment psikologi kerja berbasis Permenaker")
-st.sidebar.caption("HRGA System 2026")
